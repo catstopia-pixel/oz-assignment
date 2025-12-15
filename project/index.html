@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <title>Admin Page</title>
+
+  <style>
+    body.dark { background:#121212; color:#e9ecef; }
+    body.dark .table { --bs-table-bg:#1b1f23; --bs-table-color:#e9ecef; }
+    body.dark .form-select, body.dark .form-control {
+      background:#1b1f23; color:#e9ecef; border-color:#3a3f45;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container mt-4">
+
+    <!-- 상단 유틸 -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-secondary">현재 시간</span>
+        <span id="clock" class="fw-semibold"></span>
+      </div>
+
+      <div class="d-flex gap-3 align-items-center">
+        <!-- 다크모드 -->
+        <div class="form-check form-switch m-0">
+          <input class="form-check-input" type="checkbox" id="darkToggle">
+          <label class="form-check-label" for="darkToggle">다크모드</label>
+        </div>
+
+        <!-- 회원가입: 모달 삭제, 페이지 이동으로 연결 -->
+        <a class="btn btn-outline-primary" href="signup.html">회원가입</a>
+      </div>
+    </div>
+
+    <h3 class="mb-3">신규 등록 상품</h3>
+
+    <!-- 검색 폼 -->
+    <form class="row row-cols-lg-auto g-3 align-items-center mb-3">
+      <!-- 카테고리 (name 유지) -->
+      <div class="col-12">
+        <select class="form-select" id="categorySelect" name="category_data_table">
+          <option value="전체" selected>카테고리(전체)</option>
+          <option value="상의">상의</option>
+          <option value="하의">하의</option>
+          <option value="신발">신발</option>
+          <option value="패션잡화">패션잡화</option>
+        </select>
+      </div>
+
+      <!-- 성별(챌린지) -->
+      <div class="col-12">
+        <select class="form-select" id="genderSelect">
+          <option value="전체" selected>성별(전체)</option>
+          <option value="남성">남성</option>
+          <option value="여성">여성</option>
+          <option value="공용">공용</option>
+        </select>
+      </div>
+
+      <!-- 입력창(placeholder 요구) -->
+      <div class="col-3">
+        <input
+          type="text"
+          class="form-control"
+          id="keywordInput"
+          placeholder="제품명을 입력해주세요"
+        />
+      </div>
+
+      <!-- 조회 버튼 -->
+      <div class="col-auto">
+        <button type="button" class="btn btn-primary" id="searchBtn">조회</button>
+      </div>
+    </form>
+
+    <!-- 테이블 (thead 속성 / tbody 데이터) -->
+    <table class="table table-sm align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>카테고리</th>
+          <th>브랜드</th>
+          <th>상품명</th>
+          <th>가격</th>
+        </tr>
+      </thead>
+      <tbody id="product_data_Table"></tbody>
+    </table>
+
+    <!-- 페이지네이션 -->
+    <nav class="d-flex justify-content-center">
+      <ul class="pagination" id="pagination"></ul>
+    </nav>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // 데이터
+    const product_data = [
+      { category: "상의", brand: 'Supreme', product: '슈프림 박스로고 후드티', price: '390,000', gender: '공용' },
+      { category: "하의", brand: 'DIESEL', product: '디젤 트랙 팬츠', price: '188,000', gender: '남성' },
+      { category: "신발", brand: 'Nike', product: '에어포스 1', price: '137,000', gender: '공용' },
+      { category: "패션잡화", brand: 'Music&Goods', product: '빵빵이 키링', price: '29,000', gender: '여성' },
+      { category: "상의", brand: 'Adidas', product: '아디다스 져지', price: '99,000', gender: '남성' },
+      { category: "하의", brand: 'Levi’s', product: '501 오리지널', price: '129,000', gender: '공용' },
+      { category: "신발", brand: 'New Balance', product: '990v6', price: '329,000', gender: '여성' },
+      { category: "패션잡화", brand: 'Ray-Ban', product: '웨이페어러 선글라스', price: '189,000', gender: '공용' },
+    ];
+
+    const tbody = document.getElementById("product_data_Table");
+    const pagination = document.getElementById("pagination");
+
+    const categorySelect = document.getElementById("categorySelect");
+    const genderSelect = document.getElementById("genderSelect");
+    const keywordInput = document.getElementById("keywordInput");
+    const searchBtn = document.getElementById("searchBtn");
+
+    const PAGE_SIZE = 5;
+    let currentPage = 1;
+    let filtered = [...product_data];
+
+    function renderTable() {
+      tbody.innerHTML = "";
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const pageItems = filtered.slice(start, start + PAGE_SIZE);
+
+      pageItems.forEach(item => {
+        const row = tbody.insertRow();
+        row.insertCell().innerText = item.category;
+        row.insertCell().innerText = item.brand;
+        row.insertCell().innerText = item.product;
+        row.insertCell().innerText = item.price;
+      });
+
+      renderPagination();
+    }
+
+    function renderPagination() {
+      pagination.innerHTML = "";
+      const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+
+      for (let i = 1; i <= totalPages; i++) {
+        const li = document.createElement("li");
+        li.className = `page-item ${i === currentPage ? "active" : ""}`;
+        li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+        li.addEventListener("click", (e) => {
+          e.preventDefault();
+          currentPage = i;
+          renderTable();
+        });
+        pagination.appendChild(li);
+      }
+    }
+
+    function applyFilter() {
+      const category = categorySelect.value;
+      const gender = genderSelect.value;
+      const keyword = keywordInput.value.trim();
+
+      filtered = product_data.filter(item => {
+        const cOk = (category === "전체") || (item.category === category);
+        const gOk = (gender === "전체") || (item.gender === gender);
+        const kOk = (keyword === "") || item.product.includes(keyword);
+        return cOk && gOk && kOk;
+      });
+
+      currentPage = 1;
+      renderTable();
+    }
+
+    searchBtn.addEventListener("click", applyFilter);
+    categorySelect.addEventListener("change", applyFilter);
+    genderSelect.addEventListener("change", applyFilter);
+
+    keywordInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        applyFilter();
+      }
+    });
+
+    // 현재 시간
+    const clock = document.getElementById("clock");
+    function updateClock() {
+      const now = new Date();
+      clock.innerText = now.toLocaleString();
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // 다크모드
+    const darkToggle = document.getElementById("darkToggle");
+    darkToggle.addEventListener("change", () => {
+      document.body.classList.toggle("dark", darkToggle.checked);
+    });
+
+    // 초기 렌더
+    renderTable();
+  </script>
+</body>
+</html>
